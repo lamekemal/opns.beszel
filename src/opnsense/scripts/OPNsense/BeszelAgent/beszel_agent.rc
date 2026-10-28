@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# PROVIDE: beszel_agent
+# REQUIRE: LOGIN NETWORKING
+# KEYWORD: shutdown
+#
+# beszel_agent_enable (bool):    Set to "YES" to enable beszel-agent.
+#                                 Default: NO
+# beszel_agent_config (path):    Path to config file.
+#                                 Default: /usr/local/etc/beszel-agent.conf
+
+. /etc/rc.subr
+
+name="beszel_agent"
+rcvar="${name}_enable"
+desc="Beszel Agent - lightweight server monitoring agent"
+
+load_rc_config $name
+
+: ${beszel_agent_enable:="NO"}
+: ${beszel_agent_config:="/usr/local/etc/beszel-agent.conf"}
+: ${beszel_agent_pidfile:="/var/run/beszel-agent.pid"}
+: ${beszel_agent_logfile:="/var/log/beszel-agent.log"}
+
+beszel_agent_bin="/usr/local/bin/beszel-agent"
+pidfile="${beszel_agent_pidfile}"
+command="/usr/sbin/daemon"
+
+start_precmd="beszel_agent_prestart"
+stop_postcmd="beszel_agent_poststop"
+
+beszel_agent_prestart()
+{
+    # Check if the binary exists
+    if [ ! -x "${beszel_agent_bin}" ]; then
+        echo "beszel-agent binary not found at ${beszel_agent_bin}."
+        echo "Running setup script to download it..."
+        /usr/local/opnsense/scripts/OPNsense/BeszelAgent/setup.sh
+        if [ ! -x "${beszel_agent_bin}" ]; then
+            echo "Failed to download beszel-agent binary."
+            return 1
+        fi
+    fi
+
+    # Check if the config file exists
+    if [ ! -f "${beszel_agent_config}" ]; then
+        echo "Configuration file not found: ${beszel_agent_config}"
+        return 1
+    fi
+
+    # Ensure log file exists
+    touch "${beszel_agent_logfile}"
+
+    # Build the environment from config
+    _env=""
+    _hub_url=$(grep "^HUB_URL=" "${beszel_agent_config}" | head -1 | sed 's/^HUB_URL=//;s/^"//;s/"$//')
+    _listen=$(grep "^LISTEN=" "${beszel_agent_config}" | head -1 | sed 's/^LISTEN=//;s/^"//;s/"$//')
+    _key=$(grep "^KEY=" "${beszel_agent_config}" | head -1 | sed 's/^KEY=//;s/^"//;s/"$//')
+    _token=$(grep "^TOKEN=" "${beszel_agent_config}" | head -1 | sed 's/^TOKEN=//;s/^"//;s/"$//')
+    _extra_fs=$(grep "^EXTRA_FILESYSTEMS=" "${beszel_agent_config}" | head -1 | sed 's/^EXTRA_FILESYSTEMS=//;s/^"//;s/"$//')
+
+    if [ -z "${_hub_url}" ] || [ -z "${_key}" ] || [ -z "${_token}" ]; then
+        echo "Error: Required configuration values (HUB_URL, KEY, TOKEN) are missing."
+        return 1
+    fi
+
+    export HUB_URL="${_hub_url}"
+    export LISTEN="${_listen}"
+    export KEY="${_key}"
+    export TOKEN="${_token}"
+    if [ -n "${_extra_fs}" ]; then
+        export EXTRA_FILESYSTEMS="${_extra_fs}"
+    fi
+}
+
+beszel_agent_poststop()
+{
+    rm -f "${pidfile}"
+}
+
+command_args="-f -p ${pidfile} -o ${beszel_agent_logfile} ${beszel_agent_bin}"
+
+run_rc_command "$1"

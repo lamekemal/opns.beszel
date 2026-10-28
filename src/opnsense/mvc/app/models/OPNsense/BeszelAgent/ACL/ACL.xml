@@ -1,0 +1,6 @@
+<ACL>
+    <beszelagent>
+        <Pattern>/api/beszelagent/*</Pattern>
+        <Allowed>session,admin</Allowed>
+    </beszelagent>
+</ACL>

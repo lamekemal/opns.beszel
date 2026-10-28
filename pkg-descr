@@ -1,0 +1,11 @@
+Beszel Agent plugin for OPNsense.
+
+Provides a web-based interface to configure and manage the Beszel Agent,
+a lightweight server monitoring agent that connects to a Beszel Hub instance.
+
+Features:
+- Enable/disable the Beszel Agent service
+- Configure connection settings (Hub URL, port, public key, token)
+- View service logs in real-time
+
+WWW: https://github.com/henrygd/beszel
