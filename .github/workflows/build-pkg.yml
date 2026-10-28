@@ -1,0 +1,66 @@
+name: Build and Release OPNsense Package
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-pkg:
+    name: Build .pkg on FreeBSD
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build package in FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg update -f
+            pkg install -y git gmake
+          run: |
+            set -e
+            echo "==> Setting up OPNsense plugins build tree..."
+            PLUGINS_TREE="/usr/plugins"
+            git clone --depth 1 https://github.com/opnsense/plugins.git "${PLUGINS_TREE}"
+
+            PLUGIN_PATH="${PLUGINS_TREE}/sysutils/beszel-agent"
+            mkdir -p "${PLUGIN_PATH}"
+            cp -r * "${PLUGIN_PATH}/"
+
+            echo "==> Building OPNsense package..."
+            cd "${PLUGIN_PATH}"
+            make package
+
+            echo "==> Collecting package artifacts..."
+            cd "${GITHUB_WORKSPACE}"
+            mkdir -p dist
+            find "${PLUGIN_PATH}/work" -type f \( -name "*.pkg" -o -name "*.txz" \) -exec cp -v {} dist/ \;
+            ls -la dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: os-beszel-agent-pkg
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Attach package to GitHub Release
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

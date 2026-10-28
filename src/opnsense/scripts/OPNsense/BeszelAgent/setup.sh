@@ -1,12 +1,20 @@
 #!/bin/sh
 #
 # Beszel Agent setup script
-# Downloads the beszel-agent binary for FreeBSD from GitHub releases
+# Downloads and extracts the beszel-agent binary for FreeBSD from GitHub releases
 #
+
+set -e
 
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="beszel-agent"
 BINARY_PATH="${INSTALL_DIR}/${BINARY_NAME}"
+TMP_DIR=$(mktemp -d /tmp/beszel-setup.XXXXXX)
+
+cleanup() {
+    rm -rf "${TMP_DIR}"
+}
+trap cleanup EXIT INT TERM
 
 # Detect architecture
 ARCH=$(uname -m)
@@ -18,39 +26,65 @@ case "${ARCH}" in
         ARCH="arm64"
         ;;
     *)
-        echo "Unsupported architecture: ${ARCH}"
+        echo "Error: Unsupported architecture: ${ARCH}"
         exit 1
         ;;
 esac
 
-OS="freebsd"
+echo "==> Architecture detected: FreeBSD ${ARCH}"
 
-echo "==> Downloading beszel-agent for ${OS}_${ARCH}..."
+TAR_FILE="${TMP_DIR}/beszel-agent.tar.gz"
 
-# Download the latest release binary
-DOWNLOAD_URL="https://github.com/henrygd/beszel/releases/latest/download/beszel-agent_${OS}_${ARCH}"
+download_file() {
+    _url="$1"
+    _out="$2"
+    if command -v fetch >/dev/null 2>&1; then
+        fetch -q -o "${_out}" "${_url}" 2>/dev/null
+    elif command -v curl >/dev/null 2>&1; then
+        curl -sSL -f -o "${_out}" "${_url}" 2>/dev/null
+    else
+        return 1
+    fi
+}
 
-# Use fetch (available on FreeBSD) or curl as fallback
-if command -v fetch >/dev/null 2>&1; then
-    fetch -o "${BINARY_PATH}" "${DOWNLOAD_URL}"
-elif command -v curl >/dev/null 2>&1; then
-    curl -sL "${DOWNLOAD_URL}" -o "${BINARY_PATH}"
+echo "==> Downloading latest beszel-agent release..."
+
+# Try lowercase freebsd then uppercase FreeBSD naming convention
+SUCCESS=0
+for OS_VARIANT in "freebsd" "FreeBSD"; do
+    URL="https://github.com/henrygd/beszel/releases/latest/download/beszel-agent_${OS_VARIANT}_${ARCH}.tar.gz"
+    if download_file "${URL}" "${TAR_FILE}"; then
+        if gzip -t "${TAR_FILE}" >/dev/null 2>&1; then
+            SUCCESS=1
+            break
+        fi
+    fi
+done
+
+if [ ${SUCCESS} -ne 1 ]; then
+    echo "Error: Failed to download beszel-agent archive from GitHub releases."
+    exit 1
+fi
+
+echo "==> Extracting beszel-agent binary..."
+mkdir -p "${INSTALL_DIR}"
+tar -xzf "${TAR_FILE}" -C "${TMP_DIR}"
+
+if [ -f "${TMP_DIR}/${BINARY_NAME}" ]; then
+    mv -f "${TMP_DIR}/${BINARY_NAME}" "${BINARY_PATH}"
 else
-    echo "Error: neither fetch nor curl found. Cannot download beszel-agent."
-    exit 1
+    FOUND=$(find "${TMP_DIR}" -type f -name "${BINARY_NAME}*" | head -n 1)
+    if [ -n "${FOUND}" ]; then
+        mv -f "${FOUND}" "${BINARY_PATH}"
+    else
+        echo "Error: beszel-agent binary not found inside archive."
+        exit 1
+    fi
 fi
 
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to download beszel-agent."
-    exit 1
-fi
-
-# Make it executable
-chmod +x "${BINARY_PATH}"
+chmod 755 "${BINARY_PATH}"
 
 echo "==> beszel-agent installed successfully at ${BINARY_PATH}"
-
-# Verify binary
 if [ -x "${BINARY_PATH}" ]; then
     echo "==> Binary verification OK"
 else

@@ -12,12 +12,9 @@ RC_SCRIPT="/usr/local/etc/rc.d/beszel_agent"
 
 # Read enabled status from the generated config
 if [ -f "${CONFIG_FILE}" ]; then
-    . "${CONFIG_FILE}"
+    ENABLED_VAL=$(grep "^ENABLED=" "${CONFIG_FILE}" 2>/dev/null | head -1 | cut -d'"' -f2)
 
-    # Check if there's actual content (service is enabled)
-    HUB_URL_VAL=$(grep "^HUB_URL=" "${CONFIG_FILE}" 2>/dev/null | head -1 | cut -d'"' -f2)
-
-    if [ -n "${HUB_URL_VAL}" ]; then
+    if [ "${ENABLED_VAL}" = "1" ]; then
         # Service is enabled — ensure rc.conf is set and restart
         sysrc beszel_agent_enable="YES" >/dev/null 2>&1
 

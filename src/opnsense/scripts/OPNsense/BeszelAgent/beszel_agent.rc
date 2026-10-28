@@ -52,7 +52,6 @@ beszel_agent_prestart()
     touch "${beszel_agent_logfile}"
 
     # Build the environment from config
-    _env=""
     _hub_url=$(grep "^HUB_URL=" "${beszel_agent_config}" | head -1 | sed 's/^HUB_URL=//;s/^"//;s/"$//')
     _listen=$(grep "^LISTEN=" "${beszel_agent_config}" | head -1 | sed 's/^LISTEN=//;s/^"//;s/"$//')
     _key=$(grep "^KEY=" "${beszel_agent_config}" | head -1 | sed 's/^KEY=//;s/^"//;s/"$//')
@@ -64,8 +63,10 @@ beszel_agent_prestart()
         return 1
     fi
 
+    _port="${_listen:-45876}"
     export HUB_URL="${_hub_url}"
-    export LISTEN="${_listen}"
+    export LISTEN="${_port}"
+    export PORT="${_port}"
     export KEY="${_key}"
     export TOKEN="${_token}"
     if [ -n "${_extra_fs}" ]; then
