@@ -24,12 +24,20 @@ namespace OPNsense\BeszelAgent;
 class IndexController extends \OPNsense\Base\IndexController
 {
     /**
+     * Default index page - general settings
+     */
+    public function indexAction()
+    {
+        $this->view->generalForm = $this->getForm('general');
+        $this->view->pick('OPNsense/BeszelAgent/general');
+    }
+
+    /**
      * General settings page
      */
     public function generalAction()
     {
-        $this->view->generalForm = $this->getForm('general');
-        $this->view->pick('OPNsense/BeszelAgent/general');
+        $this->indexAction();
     }
 
     /**

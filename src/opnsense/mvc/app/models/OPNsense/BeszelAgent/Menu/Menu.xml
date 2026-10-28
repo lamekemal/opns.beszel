@@ -1,8 +1,8 @@
 <menu>
     <Services>
-        <BeszelAgent VisibleName="Beszel Agent" cssClass="fa fa-heartbeat" url="/ui/beszelagent" order="90">
-            <General VisibleName="General" url="/ui/beszelagent/general" order="1"/>
-            <Diagnostics VisibleName="Log File" url="/ui/beszelagent/diagnostics" order="2"/>
+        <BeszelAgent VisibleName="Beszel Agent" cssClass="fa fa-heartbeat" order="90">
+            <General VisibleName="General" url="/ui/beszelagent/general" order="10"/>
+            <Diagnostics VisibleName="Log File" url="/ui/beszelagent/diagnostics" order="20"/>
         </BeszelAgent>
     </Services>
 </menu>

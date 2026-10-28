@@ -1,6 +1,10 @@
-<ACL>
-    <beszelagent>
-        <Pattern>/api/beszelagent/*</Pattern>
-        <Allowed>session,admin</Allowed>
-    </beszelagent>
-</ACL>
+<acl>
+    <page-services-beszelagent>
+        <name>Services: Beszel Agent</name>
+        <patterns>
+            <pattern>/ui/beszelagent/*</pattern>
+            <pattern>/ui/beszelagent</pattern>
+            <pattern>/api/beszelagent/*</pattern>
+        </patterns>
+    </page-services-beszelagent>
+</acl>

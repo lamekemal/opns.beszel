@@ -76,6 +76,7 @@ if [ "$1" = "--uninstall" ] || [ "$1" = "-u" ]; then
     rm -f /usr/local/etc/beszel-agent.conf
     rm -f /usr/local/bin/beszel-agent
     rm -f /var/run/beszel-agent.pid
+    rm -f /tmp/opnsense_menu_cache.xml
     rm -rf /tmp/cache/*
 
     # Reload configd
@@ -143,23 +144,17 @@ if [ ${INSTALLED} -eq 0 ]; then
         SRC_BASE="${TMP_DIR}/${REPO_NAME}-main/src/opnsense"
     fi
 
-    info "Installing OPNsense MVC controllers, models, and views..."
-    mkdir -p /usr/local/opnsense/mvc/app/controllers/OPNsense/BeszelAgent
-    mkdir -p /usr/local/opnsense/mvc/app/models/OPNsense/BeszelAgent
-    mkdir -p /usr/local/opnsense/mvc/app/views/OPNsense/BeszelAgent
-    cp -r "${SRC_BASE}/mvc/app/controllers/OPNsense/BeszelAgent/"* /usr/local/opnsense/mvc/app/controllers/OPNsense/BeszelAgent/
-    cp -r "${SRC_BASE}/mvc/app/models/OPNsense/BeszelAgent/"* /usr/local/opnsense/mvc/app/models/OPNsense/BeszelAgent/
-    cp -r "${SRC_BASE}/mvc/app/views/OPNsense/BeszelAgent/"* /usr/local/opnsense/mvc/app/views/OPNsense/BeszelAgent/
+    info "Deploying OPNsense MVC files (controllers, models, views, ACL, Menu)..."
+    mkdir -p /usr/local/opnsense/mvc
+    cp -R "${SRC_BASE}/mvc/"* /usr/local/opnsense/mvc/
 
-    info "Installing service templates and actions..."
-    mkdir -p /usr/local/opnsense/service/conf/actions.d
-    mkdir -p /usr/local/opnsense/service/templates/OPNsense/BeszelAgent
-    cp "${SRC_BASE}/service/conf/actions.d/actions_beszelagent.conf" /usr/local/opnsense/service/conf/actions.d/
-    cp -r "${SRC_BASE}/service/templates/OPNsense/BeszelAgent/"* /usr/local/opnsense/service/templates/OPNsense/BeszelAgent/
+    info "Deploying service templates and actions..."
+    mkdir -p /usr/local/opnsense/service
+    cp -R "${SRC_BASE}/service/"* /usr/local/opnsense/service/
 
-    info "Installing backend scripts and rc.d service..."
-    mkdir -p /usr/local/opnsense/scripts/OPNsense/BeszelAgent
-    cp -r "${SRC_BASE}/scripts/OPNsense/BeszelAgent/"* /usr/local/opnsense/scripts/OPNsense/BeszelAgent/
+    info "Deploying backend scripts and rc.d service..."
+    mkdir -p /usr/local/opnsense/scripts
+    cp -R "${SRC_BASE}/scripts/"* /usr/local/opnsense/scripts/
     cp "${SRC_BASE}/scripts/OPNsense/BeszelAgent/beszel_agent.rc" /usr/local/etc/rc.d/beszel_agent
 
     chmod 755 /usr/local/etc/rc.d/beszel_agent
@@ -181,15 +176,16 @@ configctl template reload OPNsense/BeszelAgent 2>/dev/null || true
 info "Restarting configd daemon..."
 service configd restart 2>/dev/null || true
 
-info "Clearing Volt template cache..."
+info "Clearing OPNsense menu and Volt template cache..."
+rm -f /tmp/opnsense_menu_cache.xml
 rm -rf /tmp/cache/*
 
 printf "\n"
 success "os-beszel-agent installed successfully!"
 printf "\n"
 printf "${GREEN}Next Steps:${NC}\n"
-printf "1. Log into your OPNsense Web UI.\n"
-printf "2. Go to ${YELLOW}Services > Beszel Agent > General${NC}.\n"
+printf "1. Refresh your OPNsense browser page (Ctrl+F5).\n"
+printf "2. Go to ${YELLOW}Services > Beszel Agent > General${NC} in the left menu.\n"
 printf "3. Enter your Beszel Hub URL, Public Key, and Token.\n"
 printf "4. Check ${YELLOW}'Enable Beszel Agent'${NC} and click ${YELLOW}'Save'${NC}.\n"
 printf "\n"
