@@ -108,17 +108,20 @@ download() {
 INSTALLED=0
 
 # Step A: Try to install precompiled .pkg from GitHub Releases
-PKG_URL="https://github.com/${REPO_USER}/${REPO_NAME}/releases/latest/download/${PLUGIN_NAME}-${DEFAULT_VERSION}.pkg"
 PKG_FILE="${TMP_DIR}/${PLUGIN_NAME}.pkg"
 
-info "Checking for precompiled package at ${PKG_URL}..."
-if download "${PKG_URL}" "${PKG_FILE}" && [ -s "${PKG_FILE}" ]; then
-    info "Precompiled package found! Installing with pkg add..."
-    if pkg add -f "${PKG_FILE}"; then
-        INSTALLED=1
-        success "Package installed via pkg add."
+for EXT in "pkg" "txz"; do
+    PKG_URL="https://github.com/${REPO_USER}/${REPO_NAME}/releases/latest/download/${PLUGIN_NAME}-${DEFAULT_VERSION}.${EXT}"
+    info "Checking for precompiled package at ${PKG_URL}..."
+    if download "${PKG_URL}" "${PKG_FILE}" && [ -s "${PKG_FILE}" ]; then
+        info "Precompiled package found! Installing with pkg add..."
+        if pkg add -f "${PKG_FILE}"; then
+            INSTALLED=1
+            success "Package installed via pkg add."
+            break
+        fi
     fi
-fi
+done
 
 # Step B: Fallback to direct file deployment if no release .pkg is published yet
 if [ ${INSTALLED} -eq 0 ]; then

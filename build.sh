@@ -57,7 +57,7 @@ cat <<EOF > "${META_DIR}/+MANIFEST"
   "origin": "sysutils/${PLUGIN_NAME}",
   "comment": "Beszel Agent - lightweight server monitoring agent",
   "desc": "Beszel Agent plugin for OPNsense.\nProvides a web-based interface to configure and manage the Beszel Agent.",
-  "maintainer": "contact@example.com",
+  "maintainer": "handill@live.fr",
   "www": "https://github.com/henrygd/beszel",
   "prefix": "/usr/local",
   "categories": ["sysutils"]
