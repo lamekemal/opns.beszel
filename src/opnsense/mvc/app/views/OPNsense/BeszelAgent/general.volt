@@ -26,14 +26,14 @@
         });
 
         // Update service status on page load
-        updateServiceStatusUI('beszelagent');
+        updateServiceControlUI('beszelagent');
 
         // Save settings
         $("#saveAct").click(function () {
             saveFormToEndpoint(url = '/api/beszelagent/settings/set', formid = 'frm_general_settings', callback_ok = function () {
                 $("#saveAct_progress").addClass("fa fa-spinner fa-pulse");
                 ajaxCall(url = '/api/beszelagent/service/reconfigure', sendData = {}, callback = function (data, status) {
-                    updateServiceStatusUI('beszelagent');
+                    updateServiceControlUI('beszelagent');
                     $("#saveAct_progress").removeClass("fa fa-spinner fa-pulse");
                 });
             });
@@ -44,14 +44,13 @@
             $("#testAct_progress").addClass("fa fa-spinner fa-pulse");
             ajaxCall(url = '/api/beszelagent/service/status', sendData = {}, callback = function (data, status) {
                 $("#testAct_progress").removeClass("fa fa-spinner fa-pulse");
-                if (data['response']) {
-                    BootstrapDialog.show({
-                        type: BootstrapDialog.TYPE_INFO,
-                        title: "{{ lang._('Beszel Agent Status') }}",
-                        message: data['response'],
-                        draggable: true
-                    });
-                }
+                var msg = data && data['response'] ? data['response'] : '{{ lang._("Unknown status") }}';
+                BootstrapDialog.show({
+                    type: BootstrapDialog.TYPE_INFO,
+                    title: "{{ lang._('Beszel Agent Status') }}",
+                    message: $('<div/>').text(msg).html(),
+                    draggable: true
+                });
             });
         });
     });

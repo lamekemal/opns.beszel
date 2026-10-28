@@ -22,6 +22,7 @@
 namespace OPNsense\BeszelAgent\Api;
 
 use OPNsense\Base\ApiMutableModelControllerBase;
+use OPNsense\Core\Config;
 
 /**
  * Class SettingsController
@@ -33,21 +34,42 @@ class SettingsController extends ApiMutableModelControllerBase
     protected static $internalModelClass = 'OPNsense\BeszelAgent\BeszelAgent';
 
     /**
-     * Retrieve current settings
+     * Retrieve current settings for general form
      * @return array
      */
     public function getAction()
     {
-        return $this->getBase('beszelagent', 'general');
+        $result = array();
+        if ($this->request->isGet()) {
+            $mdl = $this->getModel();
+            $result['general'] = $mdl->general->getNodes();
+        }
+        return $result;
     }
 
     /**
-     * Update settings
+     * Update settings from general form
      * @return array
-     * @throws \OPNsense\Base\ValidationException
      */
     public function setAction()
     {
-        return $this->setBase('beszelagent', 'general');
+        $result = array('result' => 'failed');
+        if ($this->request->isPost() && $this->request->hasPost('general')) {
+            $mdl = $this->getModel();
+            $mdl->general->setNodes($this->request->getPost('general'));
+            $valMsgs = $mdl->performValidation();
+            foreach ($valMsgs as $field => $msg) {
+                if (!isset($result['validations'])) {
+                    $result['validations'] = array();
+                }
+                $result['validations']['general.' . $field] = $msg->getMessage();
+            }
+            if (empty($result['validations'])) {
+                $mdl->serializeToConfig();
+                Config::getInstance()->save();
+                $result['result'] = 'saved';
+            }
+        }
+        return $result;
     }
 }

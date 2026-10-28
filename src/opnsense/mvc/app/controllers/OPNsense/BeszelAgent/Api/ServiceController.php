@@ -74,13 +74,18 @@ class ServiceController extends ApiControllerBase
 
     /**
      * Retrieve status of beszel-agent service
+     * Returns standard 'status' string ('running' or 'stopped') for UI service control
      * @return array
      */
     public function statusAction()
     {
         $backend = new Backend();
-        $response = $backend->configdRun('beszelagent status');
-        return array('response' => $response);
+        $response = trim((string)$backend->configdRun('beszelagent status'));
+        $status = 'stopped';
+        if (strpos($response, 'is running') !== false) {
+            $status = 'running';
+        }
+        return array('status' => $status, 'response' => $response);
     }
 
     /**

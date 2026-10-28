@@ -79,8 +79,9 @@ if [ "$1" = "--uninstall" ] || [ "$1" = "-u" ]; then
     rm -f /tmp/opnsense_menu_cache.xml
     rm -rf /tmp/cache/*
 
-    # Reload configd
+    # Reload configd and webgui
     service configd restart >/dev/null 2>&1 || true
+    configctl webgui restart >/dev/null 2>&1 || true
 
     success "${PLUGIN_NAME} has been completely uninstalled."
     exit 0
@@ -144,18 +145,12 @@ if [ ${INSTALLED} -eq 0 ]; then
         SRC_BASE="${TMP_DIR}/${REPO_NAME}-main/src/opnsense"
     fi
 
-    info "Deploying OPNsense MVC files (controllers, models, views, ACL, Menu)..."
-    mkdir -p /usr/local/opnsense/mvc
-    cp -R "${SRC_BASE}/mvc/"* /usr/local/opnsense/mvc/
-
-    info "Deploying service templates and actions..."
-    mkdir -p /usr/local/opnsense/service
-    cp -R "${SRC_BASE}/service/"* /usr/local/opnsense/service/
-
-    info "Deploying backend scripts and rc.d service..."
-    mkdir -p /usr/local/opnsense/scripts
-    cp -R "${SRC_BASE}/scripts/"* /usr/local/opnsense/scripts/
-    cp "${SRC_BASE}/scripts/OPNsense/BeszelAgent/beszel_agent.rc" /usr/local/etc/rc.d/beszel_agent
+    info "Deploying OPNsense plugin files..."
+    mkdir -p /usr/local/opnsense/mvc /usr/local/opnsense/service /usr/local/opnsense/scripts /usr/local/etc/rc.d
+    cp -Rf "${SRC_BASE}/mvc/"* /usr/local/opnsense/mvc/
+    cp -Rf "${SRC_BASE}/service/"* /usr/local/opnsense/service/
+    cp -Rf "${SRC_BASE}/scripts/"* /usr/local/opnsense/scripts/
+    cp -f "${SRC_BASE}/scripts/OPNsense/BeszelAgent/beszel_agent.rc" /usr/local/etc/rc.d/beszel_agent
 
     chmod 755 /usr/local/etc/rc.d/beszel_agent
     chmod 755 /usr/local/opnsense/scripts/OPNsense/BeszelAgent/*.sh
@@ -169,7 +164,10 @@ if [ ! -x "/usr/local/bin/beszel-agent" ]; then
     fi
 fi
 
-# Step D: Reload OPNsense subsystems
+# Step D: Initialize log file and reload OPNsense subsystems
+touch /var/log/beszel-agent.log
+chmod 644 /var/log/beszel-agent.log
+
 info "Reloading OPNsense configuration templates..."
 configctl template reload OPNsense/BeszelAgent 2>/dev/null || true
 
@@ -179,6 +177,9 @@ service configd restart 2>/dev/null || true
 info "Clearing OPNsense menu and Volt template cache..."
 rm -f /tmp/opnsense_menu_cache.xml
 rm -rf /tmp/cache/*
+
+info "Restarting Web GUI service..."
+configctl webgui restart 2>/dev/null || true
 
 printf "\n"
 success "os-beszel-agent installed successfully!"
